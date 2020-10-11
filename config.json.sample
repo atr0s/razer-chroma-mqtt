@@ -1,0 +1,4 @@
+{
+    "url": "mqtt://<mqtt endpoint>",
+    "client_id": "<client identifier>"
+}
