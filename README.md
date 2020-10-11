@@ -34,7 +34,9 @@ On home assistant:
         brightness: false
 ```
 
-You can use something like NSSM to run the code a service that starts up with your computer [NSSM](https://nssm.cc/)
+You can use something like [NSSM](https://nssm.cc/) to run the code a service that starts up with your computer. 
+
+There's also the option to package it up as an exe by using [pkg](https://www.npmjs.com/package/pkg)
 
 # Todo
   - Support effects
