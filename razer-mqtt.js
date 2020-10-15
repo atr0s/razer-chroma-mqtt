@@ -12,30 +12,40 @@ const options = {
 
 var client = mqtt.connect(url,options)
 
+
+function initChroma(){
+  Chroma.util.init(() => {
+    console.log("Chroma Editing Started");
+    setTimeout(() => {
+      let previousState = JSON.stringify(store.data);
+      if(previousState) {
+        console.log("Restoring previous state");
+        updateChroma('state_restore',previousState,'');
+      }
+    }, 2000);
+  });
+}
+
 function closeConnection(){
-   Chroma.util.uninit(() => {
-        console.log("Chroma Editing Stopped");
-        client.end();
+  if(Chroma.util.isActive()) {
+    Chroma.util.uninit(() => {
+      console.log("Chroma Editing Stopped");
     });
   }
+  client.end();
+  process.exit(1);
+}
 
-  client.on("connect",function(){	
-    console.log(`Connected to ${url}`);
-    Chroma.util.init(() => {
-        console.log("Chroma Editing Started");
-        setTimeout(() => {
-          let previousState = JSON.stringify(store.data);
-          if(previousState) {
-            console.log("Restoring previous state");
-            updateChroma('state_restore',previousState,'');
-          }
-        }, 2000);
-    });
-})
 
-function updateChroma(topic, message, packet){
+client.on("connect",function(){	
+  console.log(`Connected to ${url}`);
+});
+
+async function updateChroma(topic, message, packet){
     const payload = JSON.parse(message);
-
+    if(Chroma.util.isNotActive()){
+      await initChroma();
+    }
     if(payload.state === 'ON') {
         if(devicesColor) {
           Chroma.effects.all.setColor(devicesColor);
