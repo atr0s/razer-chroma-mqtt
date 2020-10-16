@@ -14,7 +14,7 @@ var client = mqtt.connect(url,options)
 
 
 function initChroma(){
-  Chroma.util.init(() => {
+   Chroma.util.init(() => {
     console.log("Chroma Editing Started");
     setTimeout(() => {
       let previousState = JSON.stringify(store.data);
@@ -24,6 +24,7 @@ function initChroma(){
       }
     }, 2000);
   });
+  setTimeout(() => {},2000);
 }
 
 function closeConnection(){
@@ -39,37 +40,50 @@ function closeConnection(){
 
 client.on("connect",function(){	
   console.log(`Connected to ${url}`);
+  initChroma();
 });
+
+client.on("error",function(error){
+  console.log("Can't connect" + error);
+  process.exit(1);
+});
+
+async function setChromaState(payload) {
+  if(Chroma.util.isNotActive()){
+    console.log("Initializing razer chroma");
+    await initChroma();
+  }
+  if(payload.state) {
+    store.set('state',payload.state);
+  }
+  if(payload.state === 'ON') {
+    if(devicesColor) {
+      Chroma.effects.all.setColor(devicesColor);
+    } else {
+      Chroma.effects.all.setColor(store.get('colors'));
+    }
+  }
+  if(payload.state === 'OFF') {
+    Chroma.effects.all.off();
+  }
+
+  if (payload.color) {
+    const c = payload.color;
+    devicesColor = Chroma.colors.rgb(c.r,c.g,c.b);
+    store.set('color',payload.color);
+    Chroma.effects.all.setColor(devicesColor);
+  }
+
+  
+
+
+}
 
 async function updateChroma(topic, message, packet){
     const payload = JSON.parse(message);
-    if(Chroma.util.isNotActive()){
-      await initChroma();
-    }
-    if(payload.state === 'ON') {
-        if(devicesColor) {
-          Chroma.effects.all.setColor(devicesColor);
-        } else {
-          Chroma.effects.all.setColor(store.get('colors'));
-        }
-    }
-
-    if (payload.color) {
-        const c = payload.color;
-        devicesColor = Chroma.colors.rgb(c.r,c.g,c.b);
-        store.set('color',payload.color);
-        Chroma.effects.all.setColor(devicesColor);
-    }
-
-    if(payload.state === 'OFF') {
-        Chroma.effects.all.off();
-    }
-
-    if(payload.state) {
-        store.set('state',payload.state);
-    }
+    await setChromaState(payload);
     client.publish(`${clientId}/state`,JSON.stringify(store.data));
-
+    
     
 }
 
